@@ -1,15 +1,15 @@
 
 --[[--------------------------------------------------------------------------
 
-    This file is part of lunit 0.4.
+    This file is part of lunit 0.5.
 
     For Details about lunit look at: http://www.mroth.net/lunit/
 
     Author: Michael Roth <mroth@nessie.de>
 
-    Copyright (c) 2004, 2006-2008 Michael Roth <mroth@nessie.de>
+    Copyright (c) 2004, 2006-2009 Michael Roth <mroth@nessie.de>
 
-    Permission is hereby granted, free of charge, to any person   
+    Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
     files (the "Software"), to deal in the Software without restriction,
     including without limitation the rights to use, copy, modify, merge,
@@ -20,11 +20,11 @@
     The above copyright notice and this permission notice shall be 
     included in all copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,   
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.    
-    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY      
-    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,      
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
@@ -61,7 +61,7 @@ function test()
     "assert_string", "assert_not_string", "assert_table", "assert_not_table",
     "assert_function", "assert_not_function", "assert_thread", "assert_not_thread",
     "assert_userdata", "assert_not_userdata", "assert_pass", "assert_error",
-    "fail", "clearstats",
+    "assert_error_match", "fail", "clearstats",
     "is_nil", "is_boolean", "is_number", "is_string", "is_table", "is_function",
     "is_thread", "is_userdata"
   }
@@ -178,7 +178,6 @@ function test_assert()
 end
 
 function test_assert_equal()
-
   assert_pass("assert_equal(\"A String\", \"A String\") doesn't work!", function()
     local a_string = assert_equal("A String", "A String")
     assert_true("A String" == a_string)
@@ -292,12 +291,10 @@ function test_assert_equal()
   assert_error("assert_equal(nil, false) \"A message\") doesn't fail!", function()
     assert_equal(nil, false, "A message")
   end)
-
 end
 
 
 function test_assert_not_equal()
-
   assert_pass("assert_not_equal(\"A String\", \"Another String\") doesn't work!", function()
     local a_string = assert_not_equal("A String", "Another String")
     assert_true("Another String" == a_string)
@@ -417,7 +414,6 @@ function test_assert_not_equal()
   assert_error("assert_not_equal(true, true, \"A message\") doesn't fail!", function()
     assert_not_equal(true, true, "A message")
   end)
-
 end
 
 
@@ -805,11 +801,9 @@ end
 
 
 
-
 module( "lunit-tests.match", lunit.testcase )
 
 function test_assert_match()
-
   assert_pass("assert_match(\"^Hello\", \"Hello World\") doesn't work!", function()
     local a_string = assert_match("^Hello", "Hello World")
     assert_equal("Hello World", a_string)
@@ -861,7 +855,6 @@ function test_assert_match()
   assert_error("assert_match(\"^World\", nil, \"A Message\") doesn't fail!", function()
     assert_match("^World", nil, "A message")
   end)
-
 end
 
 function test_assert_not_match()
@@ -916,6 +909,83 @@ function test_assert_not_match()
   assert_error("assert_not_match(\"^World\", nil, \"A Message\") doesn't fail!", function()
     assert_not_match("^World", nil, "A message")
   end)
-
 end
 
+function test_assert_error_match()
+  local ok, errobj, usrmsg
+
+  local function errfunc()
+    error("My Error!")
+  end
+
+  local errpattern = "Error!$"
+  local wrongpattern = "^_foobar_$"
+
+  local function goodfunc()
+    -- NOP
+  end
+
+  ok = pcall(function() assert_error_match(errpattern, errfunc) end)
+  assert_true(ok, "assert_error_match( <pattern>, <error> )")
+
+  ok = pcall(function() assert_error_match("A message", errpattern, errfunc) end)
+  assert_true(ok, "assert_error_match(\"A message\", <pattern>, <error>)")
+
+  usrmsg = "assert_error_match( <wrong pattern>, <error> )"
+  ok, errobj = pcall(function() assert_error_match(wrongpattern, errfunc) end)
+  assert_false(ok, usrmsg)
+  assert_table(errobj, usrmsg)
+  assert_match("expected error '.+: My Error!' to match pattern '"..wrongpattern.."' but doesn't$", errobj.msg, usrmsg)
+
+  usrmsg = "assert_error_match(\"A message\", <wrong pattern>, <error>)"
+  ok, errobj = pcall(function() assert_error_match("A message", wrongpattern, errfunc) end)
+  assert_false(ok, usrmsg)
+  assert_table(errobj, usrmsg)
+  assert_match("expected error '.+: My Error!' to match pattern '"..wrongpattern.."' but doesn't$", errobj.msg, usrmsg)
+
+  usrmsg = "assert_error_match( <pattern>, <no error> )"
+  ok, errobj = pcall(function() assert_error_match(errpattern, goodfunc) end)
+  assert_false(ok, usrmsg)
+  assert_table(errobj, usrmsg)
+  assert_match("error expected but no error occurred$", errobj.msg, usrmsg)
+
+  usrmsg = "assert_error_match(\"A message\", <pattern>, <no error>)"
+  ok, errobj = pcall(function() assert_error_match("A Message", errpattern, goodfunc) end)
+  assert_false(ok, usrmsg)
+  assert_table(errobj, usrmsg)
+  assert_match("error expected but no error occurred$", errobj.msg, usrmsg)
+end
+
+
+
+module( "lunit-tests.setup-teardown", lunit.testcase )
+
+local setup_called = 0
+local teardown_called = 0
+local helper_called = 0
+
+function setup()
+  setup_called = setup_called + 1
+end
+
+function Teardown()
+  teardown_called = teardown_called + 1
+end
+
+local function helper()
+  helper_called = helper_called + 1
+  assert(setup_called == helper_called, "setup() not called")
+  assert(teardown_called == helper_called - 1, "teardown() not called")
+end
+
+function test1()
+  helper()
+end
+
+function test2()
+  helper()
+end
+
+function test3()
+  helper()
+end

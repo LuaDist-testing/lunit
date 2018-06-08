@@ -1,12 +1,12 @@
 #! /bin/sh
 
-#   This file is part of lunit 0.4.
+#   This file is part of lunit 0.5.
 #
 #   For Details about lunit look at: http://www.mroth.net/lunit/
 #
 #   Author: Michael Roth <mroth@nessie.de>
 #
-#   Copyright (c) 2004-2008 Michael Roth <mroth@nessie.de>
+#   Copyright (c) 2004-2009 Michael Roth <mroth@nessie.de>
 #
 #   Permission is hereby granted, free of charge, to any person
 #   obtaining a copy of this software and associated documentation
@@ -33,7 +33,11 @@ if test $# = 0 ; then
   exit 1
 fi
 
-scriptname="$(readlink -n -e "$0")"
+if [ `uname` = "Darwin" ]; then 
+  scriptname="$(readlink -n "$0")"
+else
+  scriptname="$(readlink -n -f "$0")"
+fi
 interpreter="lua"
 options=""
 
@@ -41,8 +45,8 @@ while true ; do
   case "$1" in
     -h|--help)
       cat <<EOT
-lunit 0.4
-Copyright (c) 2004-2008 Michael Roth <mroth@nessie.de>
+lunit 0.5
+Copyright (c) 2004-2009 Michael Roth <mroth@nessie.de>
 This program comes WITHOUT WARRANTY OF ANY KIND.
 
 Usage: lunit [OPTIONS] [--] scripts
@@ -64,7 +68,7 @@ EOT
       exit ;;
 
     --version)
-      echo "lunit 0.4pre Copyright 2004-2008 Michael Roth <mroth@nessie.de>"       # FIXME
+      echo "lunit 0.5 Copyright 2004-2009 Michael Roth <mroth@nessie.de>"
       exit ;;
 
     -i|--interpreter)
@@ -117,5 +121,8 @@ exec "$interpreter" - "$scriptname" $options "$@" <<EOT
     force( scriptname.."-console.lua" )
   end
   require "lunit"
-  lunit.main(argv)
+  local stats = lunit.main(argv)
+  if stats.errors > 0 or stats.failed > 0 then
+    os.exit(1)
+  end
 EOT
