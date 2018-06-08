@@ -1,10 +1,10 @@
 -- This file was automatically generated for the LuaDist project.
 
 package = "lunit"
-version = "0.5-1"
+version = "0.5-2"
 -- LuaDist source
 source = {
-  tag = "0.5-1",
+  tag = "0.5-2",
   url = "git://github.com/LuaDist-testing/lunit.git"
 }
 -- Original source
@@ -21,17 +21,17 @@ Lunit comes with a test suite to test itself. The testsuite consists of approxim
    license = "MIT/X11"
 }
 dependencies = {
-   "lua >= 5.1"
+   "lua >= 5.1, < 5.2"
 }
 build = {
-	type = "builtin",
-	modules = {
-		["lunit-console"] = "lunit-console.lua",
-		["lunit"] = "lunit.lua",
-	},
-	install = {
-		bin = {
-			["lunit"] = "lunit"
-		}
-	}
+   type = "builtin",
+   modules = {
+      lunit = "lunit.lua",
+      ['lunit-console'] = "lunit-console.lua"
+   },
+   install = {
+      bin = {
+         lunit = "lunit"
+      }
+   }
 }
